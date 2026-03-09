@@ -110,7 +110,7 @@ export function AreaSummaryPanel({ summary, isLoading, error }: AreaSummaryPanel
           <div className="space-y-3">
             <div className={`p-3 rounded-lg ${accessQualityColors[summary.roads.accessQuality]}`}>
               <div className="flex items-center gap-2">
-                <Road className="h-4 w-4" />
+                <Route className="h-4 w-4" />
                 <span className="font-medium capitalize">
                   {summary.roads.accessQuality} Access
                 </span>

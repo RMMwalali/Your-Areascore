@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { geocode } from "@/lib/geocode"
+import { GET, POST } from "@/lib/geocode"
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT = 60
