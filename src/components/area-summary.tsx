@@ -5,11 +5,11 @@ import { AreaSummary } from '@/types'
 import { formatDistance } from '@/lib/utils'
 import { 
   GraduationCap, 
-  Hospital, 
+  Building, 
   ShoppingCart, 
   Bus, 
   MapPin,
-  Road,
+  Route,
   Loader2
 } from 'lucide-react'
 
@@ -21,9 +21,9 @@ interface AreaSummaryPanelProps {
 
 const categoryIcons: Record<string, React.ElementType> = {
   school: GraduationCap,
-  hospital: Hospital,
-  clinic: Hospital,
-  pharmacy: Hospital,
+  hospital: Building,
+  clinic: Building,
+  pharmacy: Building,
   supermarket: ShoppingCart,
   market: ShoppingCart,
   bus_stop: Bus,
