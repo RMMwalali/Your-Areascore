@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enable PostGIS extension
+// Run: CREATE EXTENSION IF NOT EXISTS postgis;
+
+enum PlaceSource {
+  OSM
+  HDX
+  MFL
+  OPENSCHOOLS
+  GOOGLE
+  FOURSQUARE
+}
+
+enum PlaceCategory {
+  school
+  hospital
+  clinic
+  pharmacy
+  supermarket
+  market
+  bus_stop
+  bus_station
+  mall
+  convenience
+  hardware
+  restaurant
+  bank
+  atm
+  fuel
+  other
+}
+
+enum ListingType {
+  RESIDENTIAL
+  INVESTMENT
+  ACREAGE
+  COMMERCIAL
+}
+
+enum ListingSizeUnit {
+  SQM
+  SQFT
+  ACRES
+  HECTARES
+  PLOT_50X100
+  PLOT_40_80
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum UserRole {
+  ADMIN
+}
+
+// Places table - POIs from various sources
+// Using lat/lng floats for coordinates, PostGIS for spatial queries via raw SQL
+model Place {
+  id              String        @id @default(uuid())
+  source          PlaceSource
+  sourceId        String        @map("source_id")
+  name            String
+  category        PlaceCategory
+  subcategory     String?       @map("subcategory")
+  address         String?
+  phone           String?
+  metadata        Json?         @db.Json
+  lat             Float?
+  lng             Float?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  lastVerifiedAt  DateTime?     @map("last_verified_at")
+
+  @@unique([source, sourceId])
+  @@index([category])
+  @@index([lat, lng])
+  @@map("places")
+}
+
+// Roads table
+model Road {
+  id          String   @id @default(uuid())
+  sourceId    String   @map("source_id")
+  name        String?
+  roadType    String   @map("road_type")
+  metadata    Json?    @db.Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([roadType])
+  @@map("roads")
+}
+
+// Area cache for computed summaries
+model AreaCache {
+  id            String    @id @default(uuid())
+  geohash       String
+  radiusM       Int       @map("radius_m")
+  centerLat     Float     @map("center_lat")
+  centerLng     Float     @map("center_lng")
+  computed      Json      @db.Json
+  sourcesUsed   Json      @map("sources_used") @db.Json
+  expiresAt     DateTime  @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([geohash, radiusM])
+  @@index([expiresAt])
+  @@map("area_cache")
+}
+
+// Classified listings
+model Listing {
+  id              String          @id @default(uuid())
+  title           String
+  slug            String          @unique
+  type            ListingType
+  price           Float
+  currency        String          @default("KES")
+  sizeValue       Float           @map("size_value")
+  sizeUnit        ListingSizeUnit @map("size_unit")
+  description     String?
+  contactWhatsapp String?         @map("contact_whatsapp")
+  contactPhone    String?         @map("contact_phone")
+  lat             Float?
+  lng             Float?
+  county          String?
+  town            String?
+  status          ListingStatus  @default(DRAFT)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  images          ListingImage[]
+
+  @@index([status])
+  @@index([type])
+  @@index([county])
+  @@index([town])
+  @@index([lat, lng])
+  @@map("listings")
+}
+
+// Listing images
+model ListingImage {
+  id        String   @id @default(uuid())
+  listingId String   @map("listing_id")
+  url       String
+  order     Int      @default(0)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("listing_images")
+}
+
+// Admin users
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?  @map("password_hash")
+  role         UserRole @default(ADMIN)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}

@@ -1,0 +1,82 @@
+/* Floating Ad Slider Animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.floating-ad-enter {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.floating-ad-exit {
+  animation: slideOutDown 0.5s ease-out;
+}
+
+.floating-ad-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.floating-ad-timer {
+  transition: width 1s linear;
+}
+
+.floating-ad-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Smooth transitions for content changes */
+.floating-ad-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Hover effects */
+.floating-ad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .floating-ad-mobile-enter {
+    animation: slideInUp 0.3s ease-out;
+  }
+  
+  .floating-ad-mobile-exit {
+    animation: slideOutDown 0.3s ease-out;
+  }
+}
