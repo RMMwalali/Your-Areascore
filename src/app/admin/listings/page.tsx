@@ -37,10 +37,10 @@ export default function AdminListingsPage() {
 
   const [formData, setFormData] = React.useState({
     title: "",
-    type: "RESIDENTIAL" as const,
+    type: "RESIDENTIAL" as 'RESIDENTIAL' | 'INVESTMENT' | 'ACREAGE' | 'COMMERCIAL',
     price: "",
     sizeValue: "",
-    sizeUnit: "SQFT" as const,
+    sizeUnit: "" as string,
     description: "",
     contactWhatsapp: "",
     contactPhone: "",
@@ -48,7 +48,7 @@ export default function AdminListingsPage() {
     lng: "",
     county: "",
     town: "",
-    status: "DRAFT" as const,
+    status: "DRAFT" as 'DRAFT' | 'PUBLISHED',
     images: ""
   })
 

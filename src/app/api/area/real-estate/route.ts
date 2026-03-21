@@ -17,7 +17,7 @@ const PRICE_RANGES = {
   default: { min: 500000, max: 8000000, currency: "KES" }
 }
 
-function getCityFromCoordinates(lat: number, lng: number): string {
+function getCityFromCoordinates(lat: number, lng: number): keyof typeof PRICE_RANGES {
   // Simplified city detection based on coordinates
   if (Math.abs(lat - (-1.2921)) < 0.5 && Math.abs(lng - 36.8219) < 0.5) return "nairobi"
   if (Math.abs(lat - (-4.0435)) < 0.5 && Math.abs(lng - 39.6682) < 0.5) return "mombasa"
@@ -33,7 +33,8 @@ function generatePropertyData(lat: number, lng: number, count: number = 10): any
   const properties = []
   
   for (let i = 0; i < count; i++) {
-    const propertyType = Object.keys(PROPERTY_TYPES)[Math.floor(Math.random() * 4)]
+    const propertyTypeKeys = Object.keys(PROPERTY_TYPES) as Array<keyof typeof PROPERTY_TYPES>
+    const propertyType = propertyTypeKeys[Math.floor(Math.random() * propertyTypeKeys.length)]
     const specificType = PROPERTY_TYPES[propertyType][Math.floor(Math.random() * PROPERTY_TYPES[propertyType].length)]
     
     const price = Math.round(priceRange.min + Math.random() * (priceRange.max - priceRange.min))
@@ -91,7 +92,7 @@ function generatePropertyData(lat: number, lng: number, count: number = 10): any
   return properties
 }
 
-function generateAmenities(propertyType: string): string[] {
+function generateAmenities(propertyType: keyof typeof PROPERTY_TYPES): string[] {
   const allAmenities = {
     residential: ["parking", "garden", "balcony", "security", "storage", "air_conditioning", "furnished"],
     commercial: ["parking", "security", "storage", "air_conditioning", "elevator", "disabled_access"],
@@ -147,9 +148,10 @@ export async function POST(request: NextRequest) {
       const minPrice = Math.min(...prices)
       const maxPrice = Math.max(...prices)
       
-      const avgScore = properties.reduce((sum, p) => {
-        const totalScore = Object.values(p.scores).reduce((s: number, score: number) => s + score, 0)
-        return sum + totalScore / Object.keys(p.scores).length
+      const avgScore = properties.reduce((sum: number, p: any) => {
+        const scores = Object.values(p.scores) as number[]
+        const totalScore = scores.reduce((s: number, score: number) => s + score, 0)
+        return sum + (totalScore / scores.length)
       }, 0) / properties.length
       
       return NextResponse.json({

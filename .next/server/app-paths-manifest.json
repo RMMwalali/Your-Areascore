@@ -1,1 +1,20 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/listings/page": "app/admin/listings/page.js",
+  "/api/admin/listings/by-id/route": "app/api/admin/listings/by-id/route.js",
+  "/api/admin/listings/route": "app/api/admin/listings/route.js",
+  "/api/ai/analyze/route": "app/api/ai/analyze/route.js",
+  "/api/area/flood-risk/route": "app/api/area/flood-risk/route.js",
+  "/api/area/news/route": "app/api/area/news/route.js",
+  "/api/area/foursquare/route": "app/api/area/foursquare/route.js",
+  "/api/area/amenities/route": "app/api/area/amenities/route.js",
+  "/api/area/real-estate/route": "app/api/area/real-estate/route.js",
+  "/api/area/summary/route": "app/api/area/summary/route.js",
+  "/api/listings/[slug]/nearby/route": "app/api/listings/[slug]/nearby/route.js",
+  "/api/area/heatmap/route": "app/api/area/heatmap/route.js",
+  "/api/area/weather/route": "app/api/area/weather/route.js",
+  "/api/geocode/route": "app/api/geocode/route.js",
+  "/listings/[slug]/page": "app/listings/[slug]/page.js",
+  "/api/listings/route": "app/api/listings/route.js",
+  "/page": "app/page.js"
+}

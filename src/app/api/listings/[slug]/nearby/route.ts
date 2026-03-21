@@ -43,8 +43,13 @@ export async function GET(
     const now = new Date()
 
     if (cached && cached.expiresAt > now) {
+      const computed =
+        cached.computed && typeof cached.computed === "object" && !Array.isArray(cached.computed)
+          ? (cached.computed as Record<string, unknown>)
+          : {}
+
       return NextResponse.json({
-        ...cached.computed,
+        ...computed,
         cached: true,
         expiresAt: cached.expiresAt.toISOString()
       })

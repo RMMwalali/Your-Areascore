@@ -452,8 +452,8 @@ function generateHeatmapData(center: { lat: number; lng: number }, radius: numbe
   return heatmapPoints
 }
 
-function findNearestPoint(point: { lat: number; lng: number }) {
-  let nearest = null
+function findNearestPoint(point: { lat: number; lng: number }): { lat: number; lng: number; intensity: number; name: string; county: string; scores: typeof AREA_QUALITY_DATA[0]['scores'] } | null {
+  let nearest: { lat: number; lng: number; intensity: number; name: string; county: string; scores: typeof AREA_QUALITY_DATA[0]['scores'] } | null = null
   let minDistance = Infinity
   
   AREA_QUALITY_DATA.forEach(area => {
@@ -461,7 +461,11 @@ function findNearestPoint(point: { lat: number; lng: number }) {
     if (distance < minDistance) {
       minDistance = distance
       nearest = {
-        ...area,
+        lat: area.lat,
+        lng: area.lng,
+        name: area.name,
+        county: area.county,
+        scores: area.scores,
         intensity: calculateOverallScore(area.scores)
       }
     }

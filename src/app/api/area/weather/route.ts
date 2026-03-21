@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 
 // Mock weather data - in production, this would integrate with real weather APIs
-const WEATHER_STATIONS: Record<string, { lat: number; lng: number; elevation: number; name: string }> = {
+interface WeatherStation {
+  lat: number;
+  lng: number;
+  elevation: number;
+  name: string;
+}
+
+const WEATHER_STATIONS: Record<string, WeatherStation> = {
   nairobi: { lat: -1.2921, lng: 36.8219, elevation: 1795, name: "Nairobi" },
   mombasa: { lat: -4.0435, lng: 39.6682, elevation: 50, name: "Mombasa" },
   kisumu: { lat: -0.5167, lng: 34.2667, elevation: 1131, name: "Kisumu" },
@@ -12,7 +19,7 @@ const WEATHER_STATIONS: Record<string, { lat: number; lng: number; elevation: nu
 
 function getWeatherForLocation(lat: number, lng: number): any {
   // Find nearest weather station
-  let nearestStation: { name: string; lat: number; lng: number; elevation: number } | null = null
+  let nearestStation: WeatherStation | null = null
   let minDistance = Infinity
   
   Object.entries(WEATHER_STATIONS).forEach(([key, station]) => {
@@ -21,14 +28,18 @@ function getWeatherForLocation(lat: number, lng: number): any {
     )
     if (distance < minDistance) {
       minDistance = distance
-      nearestStation = { name: key, ...station }
+      nearestStation = station as WeatherStation
     }
   })
   
-  if (!nearestStation) return null
+  if (!nearestStation) {
+    return null
+  }
+  
+  const station: WeatherStation = nearestStation
   
   // Generate realistic weather data based on location and elevation
-  const baseTemp = 22 - (nearestStation.elevation / 200) // Temperature decreases with elevation
+  const baseTemp = 22 - (station.elevation / 200) // Temperature decreases with elevation
   const currentTemp = baseTemp + (Math.random() - 0.5) * 4 // Add some variation
   
   // Generate historical data for the past 30 days
@@ -58,9 +69,9 @@ function getWeatherForLocation(lat: number, lng: number): any {
   const recentTrend = historicalData.slice(7).reduce((sum, day) => sum + day.temperature, 0) / 7 - avgTemp
   
   return {
-    location: nearestStation.name,
-    coordinates: { lat: nearestStation.lat, lng: nearestStation.lng },
-    elevation: nearestStation.elevation,
+    location: station.name,
+    coordinates: { lat: station.lat, lng: station.lng },
+    elevation: station.elevation,
     current: {
       temperature: Math.round(currentTemp),
       conditions: Math.random() > 0.3 ? 'Partly Cloudy' : 'Sunny',

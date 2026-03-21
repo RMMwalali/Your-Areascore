@@ -214,8 +214,8 @@ export default function ModernHomePage() {
       let newsData = null;
 
       try {
-        if (amenitiesRes.status === 'fulfilled') {
-          const data = await amenitiesRes.value.json();
+        if (amenitiesRes.status === 'fulfilled' && typeof (amenitiesRes.value as any)?.json === 'function') {
+          const data = await (amenitiesRes.value as Response).json();
           amenities = data.amenities || [];
         }
       } catch (err) {
@@ -223,8 +223,8 @@ export default function ModernHomePage() {
       }
 
       try {
-        if (foursquareRes.status === 'fulfilled') {
-          const data = await foursquareRes.value.json();
+        if (foursquareRes.status === 'fulfilled' && typeof (foursquareRes.value as any)?.json === 'function') {
+          const data = await (foursquareRes.value as Response).json();
           foursquarePlaces = data.places || [];
         }
       } catch (err) {
@@ -232,8 +232,8 @@ export default function ModernHomePage() {
       }
 
       try {
-        if (floodRes.status === 'fulfilled') {
-          const data = await floodRes.value.json();
+        if (floodRes.status === 'fulfilled' && typeof (floodRes.value as any)?.json === 'function') {
+          const data = await (floodRes.value as Response).json();
           floodRisk = data.floodRisk || [];
         }
       } catch (err) {
@@ -241,8 +241,8 @@ export default function ModernHomePage() {
       }
 
       try {
-        if (realEstateRes.status === 'fulfilled') {
-          const data = await realEstateRes.value.json();
+        if (realEstateRes.status === 'fulfilled' && typeof (realEstateRes.value as any)?.json === 'function') {
+          const data = await (realEstateRes.value as Response).json();
           realEstate = data.properties || [];
         }
       } catch (err) {
@@ -250,8 +250,8 @@ export default function ModernHomePage() {
       }
 
       try {
-        if (weatherRes.status === 'fulfilled') {
-          const data = await weatherRes.value.json();
+        if (weatherRes.status === 'fulfilled' && typeof (weatherRes.value as any)?.json === 'function') {
+          const data = await (weatherRes.value as Response).json();
           weather = data.weather?.[0] || null;
         }
       } catch (err) {
@@ -259,8 +259,8 @@ export default function ModernHomePage() {
       }
 
       try {
-        if (newsRes.status === 'fulfilled') {
-          const data = await newsRes.value.json();
+        if (newsRes.status === 'fulfilled' && typeof (newsRes.value as any)?.json === 'function') {
+          const data = await (newsRes.value as Response).json();
           newsData = data;
         }
       } catch (err) {

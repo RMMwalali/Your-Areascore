@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 
 // Mock weather data - in production, this would integrate with real weather APIs
-const WEATHER_STATIONS: Record<string, { lat: number; lng: number; elevation: number; name: string }> = {
+interface WeatherStation {
+  lat: number
+  lng: number
+  elevation: number
+  name: string
+}
+
+const WEATHER_STATIONS: Record<string, WeatherStation> = {
   nairobi: { lat: -1.2921, lng: 36.8219, elevation: 1795, name: "Nairobi" },
   mombasa: { lat: -4.0435, lng: 39.6682, elevation: 50, name: "Mombasa" },
   kisumu: { lat: -0.5167, lng: 34.2667, elevation: 1131, name: "Kisumu" },
@@ -12,23 +19,23 @@ const WEATHER_STATIONS: Record<string, { lat: number; lng: number; elevation: nu
 
 function getWeatherForLocation(lat: number, lng: number): any {
   // Find nearest weather station
-  let nearestStation: { name: string; lat: number; lng: number; elevation: number } | null = null
+  let nearestStation: WeatherStation | null = null
   let minDistance = Infinity
   
-  Object.entries(WEATHER_STATIONS).forEach(([name, station]) => {
-    const distance = Math.sqrt(
-      Math.pow(lat - station.lat, 2) + Math.pow(lng - station.lng, 2)
-    )
+  for (const [, station] of Object.entries(WEATHER_STATIONS)) {
+    const distance = Math.sqrt(Math.pow(lat - station.lat, 2) + Math.pow(lng - station.lng, 2))
     if (distance < minDistance) {
       minDistance = distance
-      nearestStation = { name, ...station }
+      nearestStation = station
     }
-  })
+  }
   
   if (!nearestStation) return null
   
+  const station: WeatherStation = nearestStation
+  
   // Generate realistic weather data based on location and elevation
-  const baseTemp = 22 - (nearestStation.elevation / 200) // Temperature decreases with elevation
+  const baseTemp = 22 - (station.elevation / 200) // Temperature decreases with elevation
   const currentTemp = baseTemp + (Math.random() - 0.5) * 4 // Add some variation
   
   // Generate historical data for the past 30 days
@@ -58,9 +65,9 @@ function getWeatherForLocation(lat: number, lng: number): any {
   const recentTrend = historicalData.slice(7).reduce((sum, day) => sum + day.temperature, 0) / 7 - avgTemp
   
   return {
-    location: nearestStation.name,
-    coordinates: { lat: nearestStation.lat, lng: nearestStation.lng },
-    elevation: nearestStation.elevation,
+    location: station.name,
+    coordinates: { lat: station.lat, lng: station.lng },
+    elevation: station.elevation,
     current: {
       temperature: Math.round(currentTemp),
       conditions: Math.random() > 0.3 ? 'Partly Cloudy' : 'Sunny',
@@ -121,63 +128,6 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    )
-  }
-}
-      }, 0) / weatherData.length
-      
-      return NextResponse.json({
-        weather: weatherData,
-        areaSummary: {
-          averageTemperature: `${Math.round(avgTemp)}°C`,
-          averageHumidity: `${Math.round(avgHumidity)}%`,
-          conditions: weatherData.map(w => w.current.conditions).join(", "),
-          stations: weatherData.length
-        },
-        bbox,
-        lastUpdated: new Date().toISOString()
-      })
-    }
-    
-    // Return fallback data if no weather data
-    return NextResponse.json({
-      weather: [{
-        location: center ? "Selected Location" : "Unknown",
-        coordinates: center || { lat: 0, lng: 0 },
-        elevation: 1500,
-        current: {
-          temperature: "22°C",
-          humidity: "65%",
-          conditions: "Partly Cloudy",
-          rainfall: "0mm",
-          windSpeed: "10km/h",
-          pressure: "1015hPa",
-          visibility: "Good"
-        },
-        seasonal: {
-          rainySeason: "March - May, October - December",
-          drySeason: "June - September, January - February",
-          averageTemp: "22°C",
-          annualRainfall: "600mm",
-          bestTimeToVisit: "June - September (dry season)"
-        },
-        lastUpdated: new Date().toISOString()
-      }],
-      areaSummary: {
-        averageTemperature: "22°C",
-        averageHumidity: "65%",
-        conditions: "Partly Cloudy",
-        stations: 1
-      },
-      bbox,
-      lastUpdated: new Date().toISOString()
-    })
-    
-  } catch (error) {
-    console.error("Weather API error:", error)
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
