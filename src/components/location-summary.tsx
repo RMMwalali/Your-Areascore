@@ -108,6 +108,24 @@ export function LocationSummary({ summary, loading = false, error, onRetry }: Lo
     )
   }
 
+  if (!summary.overview || !summary.categories) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            <Info className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p>Analysis data is incomplete. Please retry.</p>
+            {onRetry && (
+              <Button onClick={onRetry} variant="outline" size="sm" className="mt-3">
+                Try Again
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
     if (score >= 60) return 'text-yellow-600'
@@ -137,26 +155,26 @@ export function LocationSummary({ summary, loading = false, error, onRetry }: Lo
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">{summary.overview.name}</CardTitle>
-            <Badge className={getVerdictColor(summary.overview.verdict)}>
-              {summary.overview.verdict}
+            <CardTitle className="text-lg">{summary.overview?.name ?? "Selected Area"}</CardTitle>
+            <Badge className={getVerdictColor(summary.overview?.verdict ?? "")}> 
+              {summary.overview?.verdict ?? ""}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex items-center justify-center mb-4">
-            <div className={`text-4xl font-bold ${getScoreColor(summary.overview.score)}`}>
-              {summary.overview.score}/100
+            <div className={`text-4xl font-bold ${getScoreColor(summary.overview?.score ?? 0)}`}>
+              {summary.overview?.score ?? 0}/100
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-center space-x-2">
               <ThumbsUp className="h-4 w-4 text-green-500" />
-              <span className="text-green-700">{summary.overview.strength}</span>
+              <span className="text-green-700">{summary.overview?.strength ?? ""}</span>
             </div>
             <div className="flex items-center space-x-2">
               <ThumbsDown className="h-4 w-4 text-red-500" />
-              <span className="text-red-700">{summary.overview.risk}</span>
+              <span className="text-red-700">{summary.overview?.risk ?? ""}</span>
             </div>
           </div>
         </CardContent>
@@ -180,16 +198,16 @@ export function LocationSummary({ summary, loading = false, error, onRetry }: Lo
               <div key={key} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 text-gray-500" />
                     <span className="font-medium text-sm">{label}</span>
                     <Badge variant="outline" className="text-xs">{weight}</Badge>
                   </div>
-                  <span className={`font-bold ${getScoreColor(category.score)}`}>
-                    {category.score}/100
+                  <span className={`font-bold ${getScoreColor(category?.score ?? 0)}`}>
+                    {category?.score ?? 0}/100
                   </span>
                 </div>
-                <Progress value={category.score} className="h-2" />
-                <p className="text-xs text-gray-600">{category.explanation}</p>
+                <Progress value={category?.score ?? 0} className="h-2" />
+                <p className="text-xs text-gray-600">{category?.explanation ?? ""}</p>
               </div>
             )
           })}

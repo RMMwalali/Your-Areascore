@@ -65,6 +65,78 @@ const fallbackLocations = [
   }
 ]
 
+type GeocodeResult = {
+  label: string
+  lat: number
+  lng: number
+  type: string
+  county?: string
+  town?: string
+}
+
+async function nominatimSearch(query: string): Promise<GeocodeResult[]> {
+  const url = new URL("https://nominatim.openstreetmap.org/search")
+  url.searchParams.set("format", "jsonv2")
+  url.searchParams.set("q", query)
+  url.searchParams.set("countrycodes", "ke")
+  url.searchParams.set("addressdetails", "1")
+  url.searchParams.set("limit", "10")
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 6000)
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "areascore/1.0 (geocoding; contact: admin@areascore.ke)"
+      },
+      signal: controller.signal
+    })
+
+    if (!res.ok) return []
+    const data = (await res.json()) as any[]
+    if (!Array.isArray(data)) return []
+
+    return data
+      .map((item) => {
+        const address = item.address || {}
+        const town =
+          address.city ||
+          address.town ||
+          address.village ||
+          address.suburb ||
+          address.neighbourhood ||
+          address.hamlet ||
+          address.road
+        const county = address.county || address.state || address.region
+
+        return {
+          label: item.display_name || query,
+          lat: Number(item.lat),
+          lng: Number(item.lon),
+          type: String(item.type || item.class || "place"),
+          county: county ? String(county) : undefined,
+          town: town ? String(town) : undefined
+        } satisfies GeocodeResult
+      })
+      .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+  } catch {
+    return []
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function fallbackSearch(query: string): typeof fallbackLocations {
+  const lowerQuery = query.toLowerCase()
+  return fallbackLocations.filter((loc) =>
+    loc.label.toLowerCase().includes(lowerQuery) ||
+    loc.town?.toLowerCase().includes(lowerQuery) ||
+    loc.county?.toLowerCase().includes(lowerQuery)
+  )
+}
+
 export async function GET(request: NextRequest) {
   try {
     const ip = request.ip || 'unknown'
@@ -86,20 +158,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Filter by query if provided
-    if (query) {
-      const lowerQuery = query.toLowerCase()
-      const filteredLocations = fallbackLocations.filter(loc => 
-        loc.label.toLowerCase().includes(lowerQuery) ||
-        loc.town?.toLowerCase().includes(lowerQuery) ||
-        loc.county?.toLowerCase().includes(lowerQuery)
-      )
-      return NextResponse.json({ results: filteredLocations })
+    const trimmed = query.trim()
+    const nominatimResults = await nominatimSearch(trimmed)
+    if (nominatimResults.length > 0) {
+      return NextResponse.json({ results: nominatimResults })
     }
 
-    return NextResponse.json({
-      results: fallbackLocations
-    })
+    return NextResponse.json({ results: fallbackSearch(trimmed) })
 
   } catch (error) {
     console.error("Geocode error:", error)
@@ -138,20 +203,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Filter by query if provided
-    if (query) {
-      const lowerQuery = query.toLowerCase()
-      const filteredLocations = fallbackLocations.filter(loc => 
-        loc.label.toLowerCase().includes(lowerQuery) ||
-        loc.town?.toLowerCase().includes(lowerQuery) ||
-        loc.county?.toLowerCase().includes(lowerQuery)
-      )
-      return NextResponse.json({ results: filteredLocations })
+    const trimmed = String(query).trim()
+    const nominatimResults = await nominatimSearch(trimmed)
+    if (nominatimResults.length > 0) {
+      return NextResponse.json({ results: nominatimResults })
     }
 
-    return NextResponse.json({
-      results: fallbackLocations
-    })
+    return NextResponse.json({ results: fallbackSearch(trimmed) })
 
   } catch (error) {
     console.error("Geocode error:", error)
