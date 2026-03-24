@@ -50,7 +50,7 @@ interface LocationSummaryProps {
 }
 
 export function LocationSummary({ summary, loading = false, error, onRetry }: LocationSummaryProps) {
-  const [expandedSection, setExpandedSection] = useState<string>('insights')
+  const [expandedSection, setExpandedSection] = useState<string | null>('insights')
 
   if (loading) {
     return (

@@ -612,7 +612,7 @@ export default function ModernHomePage() {
               <LocationSummary 
                 summary={aiSummary}
                 loading={isLoadingSummary}
-                error={summaryError}
+                error={summaryError ?? undefined}
                 onRetry={() => selectedLocation && loadAIAnalysis(selectedLocation.lat, selectedLocation.lng, selectedLocation.label)}
               />
               

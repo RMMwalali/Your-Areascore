@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Map, { Marker, NavigationControl, MapRef } from "react-map-gl"
+import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
 interface MapViewProps {
@@ -51,7 +52,7 @@ export function MapView({
         onMove={evt => setViewState(evt.viewState)}
         onClick={handleMapClick}
         mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
-        mapLibreImports={{ maplibre: import("maplibre-gl") }}
+        mapLib={maplibregl as unknown as any}
         attributionControl={true}
       >
         <NavigationControl position="top-right" />

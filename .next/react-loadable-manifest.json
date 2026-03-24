@@ -8,15 +8,9 @@
   "app\\page-modern.tsx -> @/components/map-smart": {
     "id": 4473,
     "files": [
-      "static/chunks/05f6971a.a185bcead5081121.js",
+      "static/chunks/05f6971a-523ce9251d241d51.js",
       "static/chunks/920-ffd23992403fd7d8.js",
       "static/chunks/473.a4ad48980756c829.js"
-    ]
-  },
-  "components\\map.tsx -> maplibre-gl": {
-    "id": 7748,
-    "files": [
-      "static/chunks/05f6971a.a185bcead5081121.js"
     ]
   }
 }

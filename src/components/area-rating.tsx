@@ -170,16 +170,16 @@ export function AreaRating({ summary, className }: AreaRatingProps) {
             {overallScore >= 70 && (
               <li>• This area has good overall infrastructure and amenities</li>
             )}
-            {ratings.find(r => r.name === 'Education')?.score >= 70 && (
+            {(ratings.find(r => r.name === 'Education')?.score ?? 0) >= 70 && (
               <li>• Strong educational facilities in the vicinity</li>
             )}
-            {ratings.find(r => r.name === 'Healthcare')?.score >= 70 && (
+            {(ratings.find(r => r.name === 'Healthcare')?.score ?? 0) >= 70 && (
               <li>• Good healthcare access for residents</li>
             )}
-            {ratings.find(r => r.name === 'Transport')?.score < 50 && (
+            {(ratings.find(r => r.name === 'Transport')?.score ?? 0) < 50 && (
               <li>• Limited public transport options available</li>
             )}
-            {ratings.find(r => r.name === 'Shopping')?.score < 50 && (
+            {(ratings.find(r => r.name === 'Shopping')?.score ?? 0) < 50 && (
               <li>• Few shopping and market facilities nearby</li>
             )}
           </ul>

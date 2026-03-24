@@ -9,6 +9,8 @@ import {
 } from "@/lib/overpass"
 import { AreaSummary, CategoryCount, NearestItem, Place } from "@/types"
 
+export const dynamic = "force-dynamic"
+
 const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || "86400", 10)
 const DEFAULT_RADII = [1000, 2000]
 const SUMMARY_CATEGORIES = [

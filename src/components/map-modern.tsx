@@ -127,71 +127,71 @@ export function ModernMapView({
           </div>
         </div>
       ) : (
-        <Map
-          ref={mapRef}
-          {...viewState}
-          onMove={evt => setViewState(evt.viewState)}
-          onClick={handleMapClick}
-          onError={() => setMapError('Failed to load map. Please try again.')}
-          mapStyle={mapStyles[mapStyle]}
-          attributionControl={false}
-          className="rounded-lg overflow-hidden"
-        >
-        {/* Custom Controls */}
-        {showControls && (
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
-            <Button
-              size="sm"
-              onClick={zoomIn}
-              className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={zoomOut}
-              className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={resetView}
-              className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
-            >
-              <Navigation className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={cycleMapStyle}
-              className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* Markers */}
-        {markers.map(marker => (
-          <Marker
-            key={marker.id}
-            latitude={marker.lat}
-            longitude={marker.lng}
-            anchor="bottom"
-            onClick={(e) => handleMarkerClick(marker, e)}
+        <div className="rounded-lg overflow-hidden">
+          <Map
+            ref={mapRef}
+            {...viewState}
+            onMove={evt => setViewState(evt.viewState)}
+            onClick={handleMapClick}
+            onError={() => setMapError('Failed to load map. Please try again.')}
+            mapStyle={mapStyles[mapStyle]}
+            attributionControl={false}
           >
-            <div 
-              className={`
-                w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer
-                ${getMarkerColor(marker.type)}
-                hover:scale-110 transition-all duration-200 shadow-lg
-                ${selectedMarker?.id === marker.id ? 'ring-4 ring-white ring-opacity-50' : ''}
-              `}
-            >
-              {marker.label || getMarkerIcon(marker.category)}
+          {/* Custom Controls */}
+          {showControls && (
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              <Button
+                size="sm"
+                onClick={zoomIn}
+                className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={zoomOut}
+                className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={resetView}
+                className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
+              >
+                <Navigation className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={cycleMapStyle}
+                className="bg-white shadow-lg hover:bg-gray-50 text-gray-700 border"
+              >
+                <Layers className="h-4 w-4" />
+              </Button>
             </div>
-          </Marker>
-        ))}
+          )}
+
+          {/* Markers */}
+          {markers.map(marker => (
+            <Marker
+              key={marker.id}
+              latitude={marker.lat}
+              longitude={marker.lng}
+              anchor="bottom"
+              onClick={(e) => handleMarkerClick(marker, e)}
+            >
+              <div 
+                className={`
+                  w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer
+                  ${getMarkerColor(marker.type)}
+                  hover:scale-110 transition-all duration-200 shadow-lg
+                  ${selectedMarker?.id === marker.id ? 'ring-4 ring-white ring-opacity-50' : ''}
+                `}
+              >
+                {marker.label || getMarkerIcon(marker.category)}
+              </div>
+            </Marker>
+          ))}
 
         {/* Popup for selected marker */}
         {selectedMarker && (
@@ -225,7 +225,8 @@ export function ModernMapView({
             </Card>
           </Popup>
         )}
-      </Map>
+          </Map>
+        </div>
       )}
       
       {/* Attribution */}
