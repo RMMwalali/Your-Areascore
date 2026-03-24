@@ -44,6 +44,44 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 function buildAnalysisPrompt(data: LocationData): string {
   const { name, coordinates, amenities, foursquarePlaces, floodRisk, realEstate, weather, newsData } = data
   
+  const safeNumber = (v: any): number | null => {
+    const n = typeof v === 'string' ? Number(v) : typeof v === 'number' ? v : NaN
+    return Number.isFinite(n) ? n : null
+  }
+
+  const isObject = (v: any): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v)
+
+  const normalizedAmenities = Array.isArray(amenities) ? amenities : []
+  const normalizedFoursquare = Array.isArray(foursquarePlaces) ? foursquarePlaces : []
+  const normalizedRealEstate = Array.isArray(realEstate) ? realEstate : []
+  const normalizedFloodRisk = isObject(floodRisk) ? floodRisk : Array.isArray(floodRisk) ? floodRisk[0] : null
+
+  const weatherObj = isObject(weather) ? weather : null
+  const tempCFromWeather = (() => {
+    const t = safeNumber(weatherObj?.current?.temperature)
+    if (t !== null) return t
+    const kelvin = safeNumber(weatherObj?.main?.temp)
+    if (kelvin !== null) return Math.round(kelvin - 273.15)
+    return null
+  })()
+
+  const weatherCondition =
+    (typeof weatherObj?.current?.conditions === 'string' && weatherObj.current.conditions) ||
+    (typeof weatherObj?.weather?.[0]?.description === 'string' && weatherObj.weather[0].description) ||
+    null
+
+  const weatherHumidity = safeNumber(weatherObj?.current?.humidity) ?? safeNumber(weatherObj?.main?.humidity)
+
+  const rentValues = normalizedRealEstate
+    .map((p: any) => safeNumber(p?.rent) ?? safeNumber(p?.price) ?? safeNumber(p?.monthlyRent))
+    .filter((v): v is number => typeof v === 'number')
+
+  const avgRent = rentValues.length ? Math.round(rentValues.reduce((a, b) => a + b, 0) / rentValues.length) : null
+  const minRent = rentValues.length ? Math.min(...rentValues) : null
+  const maxRent = rentValues.length ? Math.max(...rentValues) : null
+
+  const incidents = Array.isArray(newsData?.incidents) ? newsData.incidents : []
+
   // Build comprehensive context
   const context = {
     location: {
@@ -51,37 +89,39 @@ function buildAnalysisPrompt(data: LocationData): string {
       coordinates: `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
     },
     amenities: {
-      count: amenities?.length || 0,
-      breakdown: amenities?.slice(0, 5).map((a: any) => `${a.name} (${a.category})`) || []
+      count: normalizedAmenities.length,
+      breakdown: normalizedAmenities
+        .slice(0, 8)
+        .map((a: any) => `${a?.name || 'Unnamed'} (${a?.category || a?.type || 'unknown'})`)
     },
     foursquare: {
-      count: foursquarePlaces?.length || 0,
-      topRated: foursquarePlaces?.slice(0, 3).map((p: any) => `${p.name} (${p.rating || 'N/A'})`) || []
+      count: normalizedFoursquare.length,
+      topRated: normalizedFoursquare
+        .slice(0, 6)
+        .map((p: any) => `${p?.name || 'Unknown'} (${p?.rating ?? p?.score ?? 'N/A'})`)
     },
     floodRisk: {
-      risk: floodRisk?.risk_level || 'Unknown',
-      elevation: floodRisk?.elevation || 'Unknown',
-      drainage: floodRisk?.drainage_quality || 'Unknown'
+      risk: normalizedFloodRisk?.risk_level || normalizedFloodRisk?.riskLevel || 'Unknown',
+      elevation: normalizedFloodRisk?.elevation ?? 'Unknown',
+      drainage: normalizedFloodRisk?.drainage_quality || normalizedFloodRisk?.drainage || 'Unknown'
     },
     realEstate: {
-      count: realEstate?.length || 0,
-      avgRent: realEstate?.length ? Math.round(realEstate.reduce((sum: number, p: any) => sum + (p.rent || 0), 0) / realEstate.length) : 0,
-      priceRange: realEstate?.length ? 
-        `${Math.min(...realEstate.map((p: any) => p.rent || Infinity)).toLocaleString()} - ${Math.max(...realEstate.map((p: any) => p.rent || 0)).toLocaleString()} KSh/month` : 
-        'No data'
+      count: normalizedRealEstate.length,
+      avgRent: avgRent ?? 'Unknown',
+      priceRange: minRent !== null && maxRent !== null ? `${minRent.toLocaleString()} - ${maxRent.toLocaleString()}` : 'No data'
     },
     weather: {
-      temp: weather?.main?.temp ? `${Math.round(weather.main.temp - 273.15)}°C` : 'Unknown',
-      condition: weather?.weather?.[0]?.description || 'Unknown',
-      humidity: weather?.main?.humidity ? `${weather.main.humidity}%` : 'Unknown'
+      temp: tempCFromWeather !== null ? `${tempCFromWeather}°C` : 'Unknown',
+      condition: weatherCondition || 'Unknown',
+      humidity: weatherHumidity !== null ? `${weatherHumidity}%` : 'Unknown'
     },
     news: {
       totalArticles: newsData?.statistics?.totalArticles || 0,
-      incidents: newsData?.incidents?.length || 0,
+      incidents: incidents.length,
       recentIncidents: newsData?.statistics?.recentIncidents || 0,
-      topIncidents: newsData?.incidents?.slice(0, 3).map((inc: any) => 
-        `${inc.title} (${inc.source.name}, ${new Date(inc.publishedAt).toLocaleDateString()})`
-      ) || [],
+      topIncidents: incidents
+        .slice(0, 5)
+        .map((inc: any) => `${inc?.title || 'Incident'} (${inc?.source?.name || 'Unknown source'}, ${inc?.publishedAt ? new Date(inc.publishedAt).toLocaleDateString() : 'Unknown date'})`),
       categories: newsData?.statistics?.categories || {}
     }
   }
@@ -128,42 +168,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('AI analyze request received:', body)
     
-    // Handle both simple format (lat, lng, locationName) and full LocationData
-    let locationData: LocationData
-    
-    if (body.lat && body.lng && body.locationName) {
-      // Simple format - create basic location data
-      locationData = {
-        name: body.locationName,
-        coordinates: { lat: body.lat, lng: body.lng }
-      }
-      
-      // Only fetch one data source for now to avoid issues
-      try {
-        // Fetch weather data only
-        const weatherRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/area/weather`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat: body.lat, lng: body.lng })
-        })
-        if (weatherRes.ok) {
-          const weatherData = await weatherRes.json()
-          locationData.weather = weatherData
-          console.log('Weather data fetched successfully')
-        }
-      } catch (error) {
-        console.log('Failed to fetch weather data:', error)
-      }
-      
-    } else {
-      // Full LocationData format
-      locationData = body as LocationData
-    }
+    const locationData: LocationData = body.lat && body.lng && body.locationName
+      ? { name: body.locationName, coordinates: { lat: body.lat, lng: body.lng } }
+      : (body as LocationData)
     
     console.log('Final location data for analysis:', locationData)
-    
-    // Use template-based analysis for now to avoid AI API issues
-    const summary = generateTemplateSummary(locationData)
+
+    let summary: AISummary
+
+    if (MISTRAL_API_KEY) {
+      try {
+        summary = await callMistralAI(locationData)
+        return NextResponse.json({ summary })
+      } catch (error) {
+        console.warn('Mistral AI call failed, falling back:', error)
+      }
+    }
+
+    if (GROQ_API_KEY) {
+      try {
+        summary = await callGroqAI(locationData)
+        return NextResponse.json({ summary })
+      } catch (error) {
+        console.warn('Groq AI call failed, falling back:', error)
+      }
+    }
+
+    summary = generateTemplateSummary(locationData)
     console.log('Generated summary:', summary)
     
     return NextResponse.json({ summary })
@@ -567,45 +598,99 @@ function extractSection(text: string, sectionNames: string[]): string {
 }
 
 function generateTemplateSummary(data: LocationData): AISummary {
-  // Fallback template-based summary when AI is unavailable
-  const { name } = data
-  
+  const safeNumber = (v: any): number | null => {
+    const n = typeof v === 'string' ? Number(v) : typeof v === 'number' ? v : NaN
+    return Number.isFinite(n) ? n : null
+  }
+  const isObject = (v: any): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v)
+
+  const { name, amenities, foursquarePlaces, floodRisk, realEstate, weather, newsData } = data
+  const amenitiesCount = Array.isArray(amenities) ? amenities.length : 0
+  const foursquareCount = Array.isArray(foursquarePlaces) ? foursquarePlaces.length : 0
+  const incidentsCount = Array.isArray(newsData?.incidents) ? newsData.incidents.length : 0
+  const flood = isObject(floodRisk) ? floodRisk : Array.isArray(floodRisk) ? floodRisk[0] : null
+  const floodLabel = flood?.risk_level || flood?.riskLevel || 'Unknown'
+
+  const rentValues = (Array.isArray(realEstate) ? realEstate : [])
+    .map((p: any) => safeNumber(p?.rent) ?? safeNumber(p?.price) ?? safeNumber(p?.monthlyRent))
+    .filter((v): v is number => typeof v === 'number')
+  const avgRent = rentValues.length ? Math.round(rentValues.reduce((a, b) => a + b, 0) / rentValues.length) : null
+
+  const weatherObj = isObject(weather) ? weather : null
+  const tempC = (() => {
+    const t = safeNumber(weatherObj?.current?.temperature)
+    if (t !== null) return t
+    const kelvin = safeNumber(weatherObj?.main?.temp)
+    if (kelvin !== null) return Math.round(kelvin - 273.15)
+    return null
+  })()
+
+  const amenitiesScore = Math.max(40, Math.min(95, 45 + amenitiesCount * 2))
+  const floodScore = floodLabel === 'High' ? 45 : floodLabel === 'Medium' ? 65 : floodLabel === 'Low' ? 80 : 70
+  const economicScore = avgRent === null ? 70 : avgRent > 80000 ? 60 : avgRent > 40000 ? 72 : 78
+  const safetyScore = incidentsCount > 3 ? 55 : incidentsCount > 0 ? 68 : 76
+  const otherScore = foursquareCount > 20 ? 80 : foursquareCount > 5 ? 74 : 70
+
+  const overallScore = Math.round(
+    safetyScore * 0.25 +
+    floodScore * 0.2 +
+    amenitiesScore * 0.25 +
+    economicScore * 0.2 +
+    otherScore * 0.1
+  )
+
+  const verdict = overallScore >= 82 ? 'Excellent' : overallScore >= 70 ? 'Good with caveats' : overallScore >= 58 ? 'Average' : 'Caution advised'
+
+  const strength = amenitiesCount > 10
+    ? 'Good day-to-day convenience with a solid spread of nearby services'
+    : 'Basic access to services, but the immediate area may feel sparse'
+
+  const risk = floodLabel === 'High'
+    ? 'Elevated flood risk — prioritize drainage, elevation and access roads'
+    : incidentsCount > 0
+      ? 'Recent incidents/news signals to watch — verify safety and access patterns'
+      : 'Standard urban considerations — verify commute and neighborhood micro-safety'
+
   return {
     overview: {
       name,
-      score: 75,
-      verdict: 'Good with caveats',
-      strength: 'Decent amenities and accessibility',
-      risk: 'Standard urban considerations'
+      score: overallScore,
+      verdict,
+      strength,
+      risk
     },
     categories: {
-      safety: { score: 70, explanation: 'Moderate safety levels typical of urban areas' },
-      floodResilience: { score: 75, explanation: 'Average flood risk for Nairobi region' },
-      amenities: { score: 80, explanation: 'Good access to basic services and facilities' },
-      economic: { score: 72, explanation: 'Moderate cost of living and property values' },
-      other: { score: 78, explanation: 'Standard urban environment with typical challenges' }
+      safety: { score: safetyScore, explanation: incidentsCount > 0 ? `Recent incident signals: ${incidentsCount} incident(s) found in nearby news.` : 'No recent incidents surfaced in the available news feed.' },
+      floodResilience: { score: floodScore, explanation: `Flood risk indicator: ${floodLabel}.` },
+      amenities: { score: amenitiesScore, explanation: `Amenities observed: ${amenitiesCount} item(s) from OSM/amenities sources.` },
+      economic: { score: economicScore, explanation: avgRent !== null ? `Indicative rent level based on nearby listings: ~KSh ${avgRent.toLocaleString()}/month.` : 'No reliable listing pricing returned; treat affordability as uncertain.' },
+      other: { score: otherScore, explanation: tempC !== null ? `Current conditions ~${tempC}°C; local vibe inferred from nearby place density.` : 'Local vibe inferred from nearby place density.' }
     },
     insights: [
-      'Location analysis based on available data sources',
-      'Consider current weather conditions and advisories',
-      'Property values reflect local market conditions',
-      'Amenity density affects daily convenience'
+      `Amenities count: ${amenitiesCount}.`,
+      `Foursquare places: ${foursquareCount}.`,
+      `Flood risk indicator: ${floodLabel}.`,
+      avgRent !== null ? `Typical rent signal: ~KSh ${avgRent.toLocaleString()}/month (listings sample).` : 'No rent sample available from listings feed.',
+      tempC !== null ? `Weather snapshot: ~${tempC}°C (${weatherObj?.current?.conditions || weatherObj?.weather?.[0]?.description || 'conditions unknown'}).` : 'Weather snapshot unavailable.',
+      incidentsCount > 0 ? `News/incidents: ${incidentsCount} recent item(s) surfaced — scan before committing.` : 'No recent incidents surfaced in the news feed.'
     ],
     recentNews: [
-      'No recent news incidents reported for this location',
-      'Standard urban activity patterns observed'
+      ...(Array.isArray(newsData?.incidents)
+        ? newsData.incidents.slice(0, 4).map((inc: any) => `${inc?.title || 'Incident'} (${inc?.source?.name || 'Unknown source'})`)
+        : []),
+      ...(incidentsCount === 0 ? ['No recent incidents surfaced in the available news feed.'] : [])
     ],
     pros: [
-      'Urban convenience with access to services',
-      'Transportation links available',
-      'Community facilities present'
+      amenitiesCount > 10 ? 'Good convenience: services and POIs are relatively dense.' : 'Some essential services appear nearby.',
+      tempC !== null ? `Weather right now is around ${tempC}°C — helpful for day-to-day comfort planning.` : 'Weather data unavailable; plan for seasonal variability.',
+      incidentsCount === 0 ? 'No recent incident signals surfaced in the news feed.' : 'News feed highlights active local issues to monitor.'
     ],
     cons: [
-      'Urban traffic and congestion',
-      'Standard city noise levels',
-      'Higher demand for housing'
+      floodLabel === 'High' ? 'Flood risk may affect access roads and property suitability during heavy rains.' : 'Flood risk unknown/variable; confirm drainage and road access.',
+      avgRent !== null && avgRent > 80000 ? 'Higher rent signal — affordability may be a constraint.' : 'Affordability depends on micro-location and property type.',
+      amenitiesCount < 6 ? 'Fewer nearby amenities in the immediate radius; you may rely on longer trips.' : 'Some amenities exist, but quality varies by facility.'
     ],
-    recommendation: 'Suitable for urban dwellers seeking convenience. Verify specific needs on-site.',
-    dataFreshness: 'Based on available data as of March 2026. Real-time verification recommended.'
+    recommendation: `If you're considering ${name}, treat this as a starting point: confirm road access, drainage and security patterns at the exact street/estate level. Use the amenity density to decide day-to-day convenience, and use the rent signal (if available) to validate affordability before committing.`,
+    dataFreshness: `Based on available third-party data and API snapshots as of ${new Date().toLocaleDateString()}. Verification recommended.`
   }
 }

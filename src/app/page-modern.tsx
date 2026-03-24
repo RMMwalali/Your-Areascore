@@ -271,7 +271,16 @@ export default function ModernHomePage() {
       const aiRes = await fetch('/api/ai/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng, locationName })
+        body: JSON.stringify({
+          name: locationName,
+          coordinates: { lat, lng },
+          amenities,
+          foursquarePlaces,
+          floodRisk,
+          realEstate,
+          weather,
+          newsData
+        })
       });
 
       console.log('AI analysis response status:', aiRes.status);
