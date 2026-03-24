@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { v4 as uuidv4 } from "uuid"
 
+export const dynamic = "force-dynamic"
+
 function getAuthUser(request: NextRequest) {
   const apiKey = request.headers.get("x-api-key")
   const validKey = process.env.ADMIN_API_KEY || "areascore-admin-key"
